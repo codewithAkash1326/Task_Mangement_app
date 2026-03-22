@@ -10,16 +10,16 @@ def create_task(task: TaskCreate , db: Session):
     db.add(new_task)
     db.commit()
     db.refresh(new_task)
-    return {"status": "Task created successfully with title",
-            "data": new_task
-        }
+    
+    return new_task
 
 
 def get_tasks(db: Session):
     tasks = db.query(TaskModel).all()
-    return {"status": "Tasks retrieved successfully",
-            "data": tasks
-        }
+    return {
+        "status": "Tasks retrieved successfully",
+        "data": tasks
+    }
 
 def get_task_by_id(id:int,db:Session):
     task = db.query(TaskModel).filter(TaskModel.id == id).first()
@@ -57,7 +57,7 @@ def delete_task(id:int , db:Session):
     
     db.delete(task)
     db.commit() 
-    return {"status": "Task deleted successfully"}
+    return None
 
 
 def mark_task_as_completed(id:int , db:Session):
