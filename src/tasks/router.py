@@ -24,3 +24,10 @@ def update_task(id:int , body: TaskCreate , db = Depends(get_db)):
 @task_routes.delete('/delete_task/{id}')
 def delete_task(id:int , db = Depends(get_db)):
     return controller.delete_task(id , db)
+
+
+@task_routes.put('/mark_task_as_completed/{id}')
+def mark_task_as_completed(id:int , db = Depends(get_db)):
+    return controller.mark_task_as_completed(id , db)
+ 
+    

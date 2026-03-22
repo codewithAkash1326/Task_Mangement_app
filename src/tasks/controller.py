@@ -58,3 +58,18 @@ def delete_task(id:int , db:Session):
     db.delete(task)
     db.commit() 
     return {"status": "Task deleted successfully"}
+
+
+def mark_task_as_completed(id:int , db:Session):
+    task = db.query(TaskModel).filter(TaskModel.id == id).first()
+
+    if not task :
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task.is_completed = True
+    db.commit()
+    db.refresh(task)
+
+    return {"status": "Task marked as completed successfully",
+            "data": task
+        }
