@@ -50,6 +50,20 @@ venv.bak/
 *.sqlite
 *.sqlite3
 
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db
+*.sqlite3
+
 # OS files
 Thumbs.db
 .DS_Store

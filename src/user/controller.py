@@ -1,10 +1,12 @@
+import jwt
 from sqlalchemy.orm import Session
 from src.user.dtos import UserCreate , UserCreatedResponse  , UserLogin
-from src.user.models import RegisterUser
-from fastapi import HTTPException
+from src.user.models import UserModel
+from fastapi import HTTPException , Request , status
 from pwdlib import PasswordHash
-from email_validator import validate_email, EmailNotValidError
-
+from src.utils.setings import setting
+from datetime import datetime , timedelta
+from jwt.exceptions import InvalidTokenError
 import re
 
 password_hash = PasswordHash.recommended()
@@ -33,11 +35,11 @@ def register_user(user_data: UserCreate, db: Session):
     elif len(user_data.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
     
-    is_user_exist = db.query(RegisterUser).filter((RegisterUser.username == user_data.username))
+    is_user_exist = db.query(UserModel).filter((UserModel.username == user_data.username))
     if is_user_exist.first():
         raise HTTPException(status_code=400, detail="Username already exists")
     
-    is_user_email_exist = db.query(RegisterUser).filter((RegisterUser.email == user_data.email))
+    is_user_email_exist = db.query(UserModel).filter((UserModel.email == user_data.email))
     if is_user_email_exist.first():
         raise HTTPException(status_code=400, detail="Email already exists")
 
@@ -48,7 +50,7 @@ def register_user(user_data: UserCreate, db: Session):
 
     
     
-    new_user = RegisterUser(
+    new_user = UserModel(
         name=user_data.name,
         username=user_data.username,
         email=user_data.email,
@@ -69,18 +71,45 @@ def register_user(user_data: UserCreate, db: Session):
 
 
 def login(body:UserLogin , db:Session):
-    user = db.query(RegisterUser).filter(RegisterUser.username == body.username).first()
+    user = db.query(UserModel).filter(UserModel.username == body.username).first()
 
     if(user is None):
         raise HTTPException(status_code=400 , detail="User name is incorrect")
     
     is_password_matched = verify_password(body.password , user.hash_password)
 
-    if is_password_matched :
-        return {
-            "status":"Login done",
-        }
-    else :
+    if not is_password_matched:
         raise HTTPException(status_code=400 , detail="PASSWORD is incorrect")
     
+    exp_time = datetime.now() + timedelta(minutes=setting.EXP_TIME)
     
+    token = jwt.encode({"_id":user.id , "exp":exp_time.timestamp() } , setting.SECRET_KEY , setting.ALGORITHM)
+
+
+    return {
+        "message":"Login succesfull" ,
+        "token":token
+    }
+   
+    
+def is_authenticated(request:Request , db:Session ):
+    try:
+        headers = request.headers
+        token = headers.get("Authorization")
+
+        if not token:
+            raise HTTPException(status_code=401 , detail="Token is Empty")
+        token = token.split(" ")[-1]
+
+        data = jwt.decode(token , setting.SECRET_KEY , setting.ALGORITHM)
+
+        user_id = data.get("_id")
+        
+        user = db.query(UserModel).filter(UserModel.id==user_id).first()
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED , detail="User not Founf")
+        print(data)
+        return user
+    except InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED , detail="you are unauthorized")
