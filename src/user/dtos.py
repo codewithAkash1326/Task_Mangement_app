@@ -12,7 +12,6 @@ class UserLogin(BaseModel):
     password:str
 
 class UserCreatedResponse(BaseModel):
-    status:str
     username:str
     name:str
     email:str
